@@ -31,9 +31,28 @@ public class HomeController {
             return;
         }
 
-        // TODO: Implementar lógica para iniciar o jogo com o PIN
+        // Iniciar o quiz - irá buscar perguntas da API externa
         System.out.println("Iniciando jogo - Nome: " + nome + ", PIN: " + pin);
-        showAlert("Sucesso", "Iniciando o jogo para " + nome + "!");
+        
+        try {
+            // Carregar tela do quiz
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                getClass().getResource("quiz.fxml")
+            );
+            javafx.scene.Parent root = loader.load();
+            
+            // Passar dados para o QuizController
+            QuizController controller = loader.getController();
+            controller.initialize(nome, pin);
+            
+            // Trocar a cena
+            javafx.stage.Stage stage = (javafx.stage.Stage) nomeField.getScene().getWindow();
+            stage.getScene().setRoot(root);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Erro", "Não foi possível iniciar o quiz: " + e.getMessage());
+        }
     }
 
     /**

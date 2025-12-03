@@ -1,8 +1,10 @@
 package br.com.grupo2.sabixao.sabixao;
 
 import br.com.grupo2.sabixao.sabixao.model.Question;
+import br.com.grupo2.sabixao.sabixao.service.ApiService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -16,7 +18,7 @@ import java.util.List;
 
 /**
  * Controller para a tela do quiz
- * Este é um exemplo de como implementar o quiz
+ * Integrado com Open Trivia Database API
  */
 public class QuizController {
 
@@ -54,18 +56,108 @@ public class QuizController {
     private Timeline timeline;
     private String nomeJogador;
     private String pin;
+    private ApiService apiService;
 
     /**
      * Inicializa o quiz com os dados do jogador
      */
-    public void initialize(String nome, String pin, List<Question> perguntas) {
+    public void initialize(String nome, String pin) {
         this.nomeJogador = nome;
         this.pin = pin;
-        this.perguntas = perguntas != null ? perguntas : criarPerguntasExemplo();
         this.perguntaAtual = 0;
         this.pontuacao = 0;
+        this.apiService = new ApiService();
 
-        carregarPergunta();
+        // Buscar perguntas da API em segundo plano
+        carregarPerguntasAPI();
+    }
+
+    /**
+     * Carrega perguntas da API externa
+     */
+    private void carregarPerguntasAPI() {
+        mostrarCarregamento();
+        
+        // Executar em thread separada para não travar a UI
+        new Thread(() -> {
+            try {
+                System.out.println("\n=== TENTANDO BUSCAR PERGUNTAS DA API ===");
+                System.out.println("URL: https://opentrivia.com/api.php?amount=10&difficulty=medium&type=multiple");
+                
+                // Buscar 10 perguntas de dificuldade média
+                perguntas = apiService.fetchTriviaQuestions(10, "medium", null);
+                
+                Platform.runLater(() -> {
+                    if (perguntas == null || perguntas.isEmpty()) {
+                        System.out.println("❌ API retornou lista vazia - usando perguntas de exemplo");
+                        mostrarInfo("⚠️ Modo Offline\n\nNão foi possível conectar com a API externa.\nUsando perguntas de exemplo em português.");
+                        perguntas = criarPerguntasExemplo();
+                    } else {
+                        System.out.println("✅ API FUNCIONOU! " + perguntas.size() + " perguntas carregadas!");
+                        mostrarSucesso("✅ API Externa Conectada!\n\n" + perguntas.size() + " perguntas reais carregadas.\n\nNOTA: Perguntas em inglês (API internacional).");
+                    }
+                    carregarPergunta();
+                });
+            } catch (Exception e) {
+                System.err.println("❌ ERRO AO CONECTAR COM API: " + e.getMessage());
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    mostrarInfo("⚠️ Modo Offline\n\nErro ao conectar: " + e.getMessage() + "\n\nUsando perguntas de exemplo para demonstração.");
+                    perguntas = criarPerguntasExemplo();
+                    carregarPergunta();
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * Mostra mensagem de carregamento
+     */
+    private void mostrarCarregamento() {
+        perguntaLabel.setText("🌐 Conectando com API externa...\n\nAguarde alguns segundos");
+        habilitarBotoes(false);
+    }
+
+    /**
+     * Mostra mensagem de informação
+     */
+    private void mostrarInfo(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Informação");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.show();
+        
+        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(3), e -> alert.close()));
+        autoClose.play();
+    }
+
+    /**
+     * Mostra mensagem de sucesso
+     */
+    private void mostrarSucesso(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Sucesso!");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.show();
+        
+        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(2), e -> alert.close()));
+        autoClose.play();
+    }
+
+    /**
+     * Mostra mensagem de erro
+     */
+    private void mostrarErro(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Aviso");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.show();
+        
+        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(2), e -> alert.close()));
+        autoClose.play();
     }
 
     /**
