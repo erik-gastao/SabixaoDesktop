@@ -1,0 +1,90 @@
+package br.com.grupo2.sabixao.sabixao;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import java.io.IOException;
+
+public class LoginController {
+
+    @FXML
+    private TextField nomeField;
+
+    @FXML
+    private PasswordField senhaField;
+
+    @FXML
+    private PasswordField confirmarSenhaField;
+
+    /**
+     * Valida os campos e cria uma nova conta
+     */
+    @FXML
+    private void handleCriarConta() {
+        String nome = nomeField.getText().trim();
+        String senha = senhaField.getText();
+        String confirmarSenha = confirmarSenhaField.getText();
+
+        // Validações
+        if (nome.isEmpty() || senha.isEmpty() || confirmarSenha.isEmpty()) {
+            showAlert("Campos Vazios", "Por favor, preencha todos os campos!", Alert.AlertType.WARNING);
+            return;
+        }
+
+        if (nome.length() < 3) {
+            showAlert("Nome Inválido", "O nome deve ter pelo menos 3 caracteres!", Alert.AlertType.WARNING);
+            return;
+        }
+
+        if (senha.length() < 6) {
+            showAlert("Senha Fraca", "A senha deve ter pelo menos 6 caracteres!", Alert.AlertType.WARNING);
+            return;
+        }
+
+        if (!senha.equals(confirmarSenha)) {
+            showAlert("Senhas Diferentes", "As senhas não coincidem!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        // TODO: Integrar com backend/API para salvar o usuário
+        System.out.println("Criando conta - Nome: " + nome);
+        showAlert("Sucesso", "Conta criada com sucesso para " + nome + "!", Alert.AlertType.INFORMATION);
+        
+        // Limpar campos após criar conta
+        limparCampos();
+    }
+
+    /**
+     * Volta para a tela inicial
+     */
+    @FXML
+    private void handleVoltar() {
+        try {
+            App.setRoot("home");
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Erro", "Não foi possível voltar para a tela inicial!", Alert.AlertType.ERROR);
+        }
+    }
+
+    /**
+     * Limpa todos os campos do formulário
+     */
+    private void limparCampos() {
+        nomeField.clear();
+        senhaField.clear();
+        confirmarSenhaField.clear();
+    }
+
+    /**
+     * Exibe alertas para o usuário
+     */
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}

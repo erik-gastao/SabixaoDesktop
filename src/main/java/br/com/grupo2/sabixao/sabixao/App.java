@@ -17,8 +17,11 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("primary"), 640, 480);
+        scene = new Scene(loadFXML("home"), 720, 480);
         stage.setScene(scene);
+        stage.setTitle("Sabixão - Quiz Game");
+        stage.setMinWidth(720);
+        stage.setMinHeight(480);
         stage.show();
     }
 
