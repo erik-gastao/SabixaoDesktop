@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Serviço de tradução usando API pública do MyMemory
@@ -20,6 +21,9 @@ public class TranslatorService {
     private static final String TRANSLATE_API = "https://api.mymemory.translated.net/get";
     private final HttpClient httpClient;
     private final Map<String, String> commonTranslations;
+    // Cache de traduções da sessão: evita repetir chamadas HTTP para o mesmo texto
+    // (thread-safe — traduções rodam em paralelo no ApiService)
+    private final Map<String, String> cache = new ConcurrentHashMap<>();
     
     public TranslatorService() {
         this.httpClient = HttpClient.newBuilder()
@@ -62,12 +66,19 @@ public class TranslatorService {
         if (text == null || text.trim().isEmpty()) {
             return text;
         }
-        
+
+        // Cache: mesmo texto nunca traduz duas vezes na sessão
+        String cached = cache.get(text);
+        if (cached != null) {
+            return cached;
+        }
+
         System.out.println("    🔄 Traduzindo: \"" + text.substring(0, Math.min(40, text.length())) + "...\"");
-        
+
         try {
             String encodedText = URLEncoder.encode(text, StandardCharsets.UTF_8);
-            String url = TRANSLATE_API + "?q=" + encodedText + "&langpair=en|pt-br";
+            // '|' precisa ser %7C — caractere ilegal em URI.create (tradução nunca funcionou com ele)
+            String url = TRANSLATE_API + "?q=" + encodedText + "&langpair=en%7Cpt-br";
             
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -92,6 +103,7 @@ public class TranslatorService {
                     !translatedText.contains("MYMEMORY WARNING")) {
                     
                     System.out.println("    ✅ Traduzido: \"" + translatedText.substring(0, Math.min(40, translatedText.length())) + "...\"");
+                    cache.put(text, translatedText);
                     return translatedText;
                 } else {
                     System.out.println("    ⚠️ Tradução inválida, usando original");
@@ -104,6 +116,7 @@ public class TranslatorService {
         }
         
         System.out.println("    📝 Usando texto original");
+        cache.put(text, text); // Cachear a falha também: evita repetir timeout de 3s no mesmo texto
         return text; // Retorna original se a tradução falhar
     }
     

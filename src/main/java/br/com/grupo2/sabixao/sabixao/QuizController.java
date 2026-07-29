@@ -176,12 +176,18 @@ public class QuizController {
         perguntaNumeroLabel.setText("Pergunta " + (perguntaAtual + 1) + " de " + perguntas.size());
         pontuacaoLabel.setText("Pontuação: " + pontuacao);
 
-        // Atualizar botões com as opções
+        // Atualizar botões com as opções — esconder botões sem opção
+        // (perguntas boolean da API têm só 2 alternativas)
         List<String> opcoes = pergunta.getOpcoes();
-        opcaoAButton.setText("A) " + opcoes.get(0));
-        opcaoBButton.setText("B) " + opcoes.get(1));
-        opcaoCButton.setText("C) " + opcoes.get(2));
-        opcaoDButton.setText("D) " + opcoes.get(3));
+        Button[] botoes = {opcaoAButton, opcaoBButton, opcaoCButton, opcaoDButton};
+        for (int i = 0; i < botoes.length; i++) {
+            boolean temOpcao = i < opcoes.size();
+            botoes[i].setVisible(temOpcao);
+            botoes[i].setManaged(temOpcao);
+            if (temOpcao) {
+                botoes[i].setText((char) ('A' + i) + ") " + opcoes.get(i));
+            }
+        }
 
         // Habilitar botões
         habilitarBotoes(true);

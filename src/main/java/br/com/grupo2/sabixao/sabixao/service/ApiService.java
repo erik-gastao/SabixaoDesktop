@@ -5,19 +5,17 @@ import br.com.grupo2.sabixao.sabixao.model.TriviaQuestion;
 import br.com.grupo2.sabixao.sabixao.model.TriviaResponse;
 import br.com.grupo2.sabixao.sabixao.model.User;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Serviço para comunicação com APIs externas
@@ -26,11 +24,18 @@ import java.util.List;
 public class ApiService {
     
     private static final String BASE_URL = "http://localhost:8080/api"; // Backend próprio (futuro)
-    private static final String TRIVIA_API_URL = "https://opentrivia.com/api.php"; // API externa principal
+    private static final String TRIVIA_API_URL = "https://opentdb.com/api.php"; // API externa principal
     private static final String BACKUP_API_URL = "https://the-trivia-api.com/v2/questions"; // API alternativa
     private final HttpClient httpClient;
     private final Gson gson;
     private final TranslatorService translator;
+    // Pool para traduzir em paralelo (8 por vez) — sequencial levava minutos para 10 perguntas.
+    // Threads daemon: não seguram o JVM aberto ao fechar a janela.
+    private final ExecutorService translationPool = Executors.newFixedThreadPool(8, r -> {
+        Thread t = new Thread(r, "translator");
+        t.setDaemon(true);
+        return t;
+    });
 
     public ApiService() {
         this.httpClient = HttpClient.newBuilder()
@@ -164,48 +169,31 @@ public class ApiService {
      */
     private List<Question> parseBackupAPIResponse(String jsonResponse) {
         try {
-            // A API alternativa retorna array direto
+            // A API alternativa retorna array direto — converter para TriviaQuestion
+            // e reutilizar o mesmo pipeline de tradução/embaralhamento da API principal
             com.google.gson.JsonArray jsonArray = gson.fromJson(jsonResponse, com.google.gson.JsonArray.class);
-            List<Question> questions = new ArrayList<>();
-            
-            System.out.println("🌍 Traduzindo perguntas para português...");
-            
+            List<TriviaQuestion> triviaQuestions = new ArrayList<>();
+
             for (int i = 0; i < jsonArray.size(); i++) {
                 com.google.gson.JsonObject obj = jsonArray.get(i).getAsJsonObject();
-                Question q = new Question();
-                
-                // Extrair dados
-                String questionText = obj.getAsJsonObject("question").get("text").getAsString();
-                String correctAnswer = obj.get("correctAnswer").getAsString();
+
+                TriviaQuestion tq = new TriviaQuestion();
+                tq.setQuestion(obj.getAsJsonObject("question").get("text").getAsString());
+                tq.setCorrectAnswer(obj.get("correctAnswer").getAsString());
+                tq.setCategory(obj.get("category").getAsString());
+                tq.setDifficulty(obj.get("difficulty").getAsString());
+
+                List<String> incorretas = new ArrayList<>();
                 com.google.gson.JsonArray incorrectAnswers = obj.getAsJsonArray("incorrectAnswers");
-                
-                // Traduzir pergunta
-                System.out.println("  📝 Traduzindo pergunta " + (i+1) + "...");
-                q.setTexto(translator.translateToPortuguese(decodeHtml(questionText)));
-                
-                // Criar lista de opções e traduzir
-                List<String> opcoes = new ArrayList<>();
-                opcoes.add(translator.translateToPortuguese(decodeHtml(correctAnswer)));
-                
                 for (int j = 0; j < incorrectAnswers.size() && j < 3; j++) {
-                    opcoes.add(translator.translateToPortuguese(decodeHtml(incorrectAnswers.get(j).getAsString())));
+                    incorretas.add(incorrectAnswers.get(j).getAsString());
                 }
-                
-                // Embaralhar
-                Collections.shuffle(opcoes);
-                String correctTranslated = translator.translateToPortuguese(decodeHtml(correctAnswer));
-                q.setOpcoes(opcoes);
-                q.setRespostaCorreta(opcoes.indexOf(correctTranslated));
-                
-                // Categoria e dificuldade
-                q.setCategoria(obj.get("category").getAsString());
-                q.setDificuldade(obj.get("difficulty").getAsString().toUpperCase());
-                
-                questions.add(q);
+                tq.setIncorrectAnswers(incorretas);
+
+                triviaQuestions.add(tq);
             }
-            
-            System.out.println("✅ " + questions.size() + " perguntas traduzidas da API alternativa");
-            return questions;
+
+            return convertTriviaToQuestions(triviaQuestions);
         } catch (Exception e) {
             System.err.println("❌ Erro ao parsear API alternativa: " + e.getMessage());
             e.printStackTrace();
@@ -214,56 +202,78 @@ public class ApiService {
     }
 
     /**
-     * Converte perguntas da API externa para o modelo interno
+     * Converte perguntas da API externa para o modelo interno,
+     * traduzindo tudo em paralelo no pool
      */
     private List<Question> convertTriviaToQuestions(List<TriviaQuestion> triviaQuestions) {
-        List<Question> questions = new ArrayList<>();
-        
-        System.out.println("🌍 Traduzindo perguntas para português...");
-        
+        System.out.println("🌍 Traduzindo perguntas para português (em paralelo)...");
+
+        // 1ª passada: disparar TODAS as traduções de uma vez no pool (8 simultâneas)
+        List<Future<String>> textosFut = new ArrayList<>();
+        List<Future<String>> corretasFut = new ArrayList<>();
+        List<List<Future<String>>> incorretasFut = new ArrayList<>();
+
         for (TriviaQuestion tq : triviaQuestions) {
+            textosFut.add(traduzirAsync(decodeHtml(tq.getQuestion())));
+            corretasFut.add(traduzirAsync(decodeHtml(tq.getCorrectAnswer())));
+
+            List<Future<String>> inc = new ArrayList<>();
+            for (String incorrect : tq.getIncorrectAnswers()) {
+                inc.add(traduzirAsync(decodeHtml(incorrect)));
+            }
+            incorretasFut.add(inc);
+        }
+
+        // 2ª passada: montar as perguntas com os resultados
+        List<Question> questions = new ArrayList<>();
+        for (int i = 0; i < triviaQuestions.size(); i++) {
+            TriviaQuestion tq = triviaQuestions.get(i);
             Question q = new Question();
-            
-            // Decodificar HTML entities
-            String questionText = decodeHtml(tq.getQuestion());
-            String correctAnswer = decodeHtml(tq.getCorrectAnswer());
-            
-            // Traduzir pergunta
-            System.out.println("  📝 Traduzindo: " + questionText.substring(0, Math.min(50, questionText.length())) + "...");
-            q.setTexto(translator.translateToPortuguese(questionText));
-            
+
+            q.setTexto(obterTraducao(textosFut.get(i), decodeHtml(tq.getQuestion())));
             q.setCategoria(tq.getCategory());
             q.setDificuldade(tq.getDifficulty().toUpperCase());
-            
-            // Criar lista de opções e traduzir
-            List<String> opcoesOriginal = new ArrayList<>();
-            opcoesOriginal.add(correctAnswer);
-            
-            for (String incorrect : tq.getIncorrectAnswers()) {
-                opcoesOriginal.add(decodeHtml(incorrect));
+
+            // Guardar a referência da tradução da correta — re-traduzir não é
+            // determinístico e quebrava o indexOf após o shuffle
+            String correctTranslated = obterTraducao(corretasFut.get(i), decodeHtml(tq.getCorrectAnswer()));
+            List<String> opcoes = new ArrayList<>();
+            opcoes.add(correctTranslated);
+
+            List<Future<String>> inc = incorretasFut.get(i);
+            List<String> incOriginais = tq.getIncorrectAnswers();
+            for (int j = 0; j < inc.size(); j++) {
+                opcoes.add(obterTraducao(inc.get(j), decodeHtml(incOriginais.get(j))));
             }
-            
-            // Traduzir todas as opções
-            List<String> opcoesTraduced = new ArrayList<>();
-            for (String option : opcoesOriginal) {
-                opcoesTraduced.add(translator.translateToPortuguese(option));
-            }
-            
-            // Embaralhar opções traduzidas
-            Collections.shuffle(opcoesTraduced);
-            
-            // Encontrar índice da resposta correta após embaralhamento
-            String correctTranslated = translator.translateToPortuguese(correctAnswer);
-            int correctIndex = opcoesTraduced.indexOf(correctTranslated);
-            
-            q.setOpcoes(opcoesTraduced);
-            q.setRespostaCorreta(correctIndex);
-            
+
+            // Embaralhar e localizar a correta pela referência já traduzida
+            Collections.shuffle(opcoes);
+            q.setOpcoes(opcoes);
+            q.setRespostaCorreta(opcoes.indexOf(correctTranslated));
+
             questions.add(q);
         }
-        
+
         System.out.println("✅ Tradução concluída!");
         return questions;
+    }
+
+    /**
+     * Dispara uma tradução no pool paralelo
+     */
+    private Future<String> traduzirAsync(String texto) {
+        return translationPool.submit(() -> translator.translateToPortuguese(texto));
+    }
+
+    /**
+     * Espera o resultado de uma tradução; em caso de erro devolve o texto original
+     */
+    private String obterTraducao(Future<String> futuro, String fallback) {
+        try {
+            return futuro.get();
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     /**
@@ -271,14 +281,10 @@ public class ApiService {
      */
     private String decodeHtml(String text) {
         if (text == null) return "";
-        
-        try {
-            // Decodificar URL encoding se houver
-            text = URLDecoder.decode(text, StandardCharsets.UTF_8.name());
-        } catch (UnsupportedEncodingException e) {
-            // Ignorar se não conseguir decodificar
-        }
-        
+
+        // NÃO usar URLDecoder aqui: o texto da API não é URL-encoded.
+        // URLDecoder quebra com '%' literal (IllegalArgumentException) e troca '+' por espaço.
+
         // Substituir entidades HTML comuns
         return text
             .replace("&quot;", "\"")
@@ -299,8 +305,8 @@ public class ApiService {
      */
     public boolean registerUser(User user) {
         try {
-            String jsonBody = String.format("{\"nome\":\"%s\",\"senha\":\"%s\"}", 
-                user.getNome(), user.getSenha());
+            // gson.toJson escapa aspas e caracteres especiais — String.format quebrava o payload
+            String jsonBody = gson.toJson(user);
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/users/register"))
@@ -326,7 +332,8 @@ public class ApiService {
      */
     public User loginUser(String nome, String senha) {
         try {
-            String jsonBody = String.format("{\"nome\":\"%s\",\"senha\":\"%s\"}", nome, senha);
+            // gson.toJson escapa aspas e caracteres especiais — String.format quebrava o payload
+            String jsonBody = gson.toJson(new User(nome, senha));
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/users/login"))
@@ -356,7 +363,8 @@ public class ApiService {
     public boolean validatePin(String pin) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/quiz/validate-pin?pin=" + pin))
+                .uri(URI.create(BASE_URL + "/quiz/validate-pin?pin="
+                    + java.net.URLEncoder.encode(pin, java.nio.charset.StandardCharsets.UTF_8)))
                 .GET()
                 .build();
 
