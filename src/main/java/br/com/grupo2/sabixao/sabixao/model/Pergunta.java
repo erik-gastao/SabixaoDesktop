@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Classe modelo para representar uma pergunta do quiz
  */
-public class Question {
+public class Pergunta {
     private Long id;
     private String texto;
     private List<String> opcoes;
@@ -13,10 +13,10 @@ public class Question {
     private String categoria;
     private String dificuldade; // FACIL, MEDIO, DIFICIL
 
-    public Question() {
+    public Pergunta() {
     }
 
-    public Question(String texto, List<String> opcoes, int respostaCorreta) {
+    public Pergunta(String texto, List<String> opcoes, int respostaCorreta) {
         this.texto = texto;
         this.opcoes = opcoes;
         this.respostaCorreta = respostaCorreta;
@@ -77,7 +77,7 @@ public class Question {
 
     @Override
     public String toString() {
-        return "Question{" +
+        return "Pergunta{" +
                 "id=" + id +
                 ", texto='" + texto + '\'' +
                 ", categoria='" + categoria + '\'' +

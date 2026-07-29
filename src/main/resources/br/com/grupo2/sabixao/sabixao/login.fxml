@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="480" minWidth="720" prefHeight="480.0" prefWidth="720.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.LoginFormController">
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="480" minWidth="720" prefHeight="480.0" prefWidth="720.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.LoginController">
    <children>
       <ImageView fitHeight="480.0" fitWidth="720.0" pickOnBounds="true" preserveRatio="false">
          <image>
@@ -33,12 +33,12 @@
       </Label>
       <TextField fx:id="nomeField" layoutX="285.0" layoutY="247.0" promptText="Digite seu nome" />
       <PasswordField fx:id="senhaField" layoutX="285.0" layoutY="297.0" promptText="Digite sua senha" />
-      <Button alignment="TOP_CENTER" layoutX="315.0" layoutY="360.0" mnemonicParsing="false" onAction="#handleEntrar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="ENTRAR">
+      <Button alignment="TOP_CENTER" layoutX="315.0" layoutY="360.0" mnemonicParsing="false" onAction="#aoEntrar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="ENTRAR">
          <font>
             <Font name="System Bold" size="13.0" />
          </font>
       </Button>
-      <Button alignment="TOP_CENTER" layoutX="21.0" layoutY="27.0" mnemonicParsing="false" onAction="#handleVoltar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="VOLTAR">
+      <Button alignment="TOP_CENTER" layoutX="21.0" layoutY="27.0" mnemonicParsing="false" onAction="#aoVoltar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="VOLTAR">
          <font>
             <Font name="System Bold" size="13.0" />
          </font>
@@ -48,7 +48,7 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <Button alignment="TOP_CENTER" layoutX="280.0" layoutY="430.0" mnemonicParsing="false" onAction="#handleCriarConta" style="-fx-background-color: transparent; -fx-text-fill: #4db8ff; -fx-font-weight: bold; -fx-underline: true; -fx-cursor: hand;" text="Criar uma conta">
+      <Button alignment="TOP_CENTER" layoutX="280.0" layoutY="430.0" mnemonicParsing="false" onAction="#aoAbrirCriarConta" style="-fx-background-color: transparent; -fx-text-fill: #4db8ff; -fx-font-weight: bold; -fx-underline: true; -fx-cursor: hand;" text="Criar uma conta">
          <font>
             <Font name="System Bold" size="11.0" />
          </font>

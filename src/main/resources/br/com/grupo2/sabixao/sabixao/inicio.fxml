@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-<Pane minHeight="480" minWidth="720" prefHeight="480.0" prefWidth="720.0" scaleShape="false" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.HomeController">
+<Pane minHeight="480" minWidth="720" prefHeight="480.0" prefWidth="720.0" scaleShape="false" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.InicioController">
    <children>
       <ImageView fitHeight="480.0" fitWidth="720.0" pickOnBounds="true" preserveRatio="false">
          <image>
@@ -67,7 +67,7 @@
          <bottom>
             <FlowPane alignment="TOP_CENTER" prefHeight="134.0" prefWidth="720.0" BorderPane.alignment="CENTER">
                <children>
-                  <Button alignment="TOP_CENTER" mnemonicParsing="false" onAction="#handleComecar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="COMEÇAR">
+                  <Button alignment="TOP_CENTER" mnemonicParsing="false" onAction="#aoComecar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="COMEÇAR">
                      <font>
                         <Font name="System Bold" size="13.0" />
                      </font>
@@ -75,7 +75,7 @@
                         <Insets right="20.0" />
                      </FlowPane.margin>
                   </Button>
-                  <Button alignment="TOP_CENTER" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleLogin" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="LOGIN">
+                  <Button alignment="TOP_CENTER" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#aoAbrirLogin" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="LOGIN">
                      <font>
                         <Font name="System Bold" size="13.0" />
                      </font>

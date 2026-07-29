@@ -3,15 +3,15 @@ package br.com.grupo2.sabixao.sabixao.model;
 /**
  * Classe modelo para representar um usuário do sistema
  */
-public class User {
+public class Usuario {
     private String nome;
     private String senha;
     private int pontuacao;
 
-    public User() {
+    public Usuario() {
     }
 
-    public User(String nome, String senha) {
+    public Usuario(String nome, String senha) {
         this.nome = nome;
         this.senha = senha;
         this.pontuacao = 0;
@@ -43,7 +43,7 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
+        return "Usuario{" +
                 "nome='" + nome + '\'' +
                 ", pontuacao=" + pontuacao +
                 '}';

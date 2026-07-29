@@ -41,12 +41,12 @@
             <Font name="System Bold" size="15.0" />
          </font>
       </Label>
-      <Button alignment="TOP_CENTER" layoutX="298.0" layoutY="380.0" mnemonicParsing="false" onAction="#handleCriarConta" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="CRIAR CONTA">
+      <Button alignment="TOP_CENTER" layoutX="298.0" layoutY="380.0" mnemonicParsing="false" onAction="#aoCriarConta" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="CRIAR CONTA">
          <font>
             <Font name="System Bold" size="13.0" />
          </font>
       </Button>
-      <Button alignment="TOP_CENTER" layoutX="21.0" layoutY="27.0" mnemonicParsing="false" onAction="#handleVoltar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="VOLTAR">
+      <Button alignment="TOP_CENTER" layoutX="21.0" layoutY="27.0" mnemonicParsing="false" onAction="#aoVoltar" style="-fx-background-color: #077dd7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 9999; -fx-border-radius: 9999; -fx-border-color: #005a9e; -fx-cursor: hand; -fx-alignment: center;" text="VOLTAR">
          <font>
             <Font name="System Bold" size="13.0" />
          </font>

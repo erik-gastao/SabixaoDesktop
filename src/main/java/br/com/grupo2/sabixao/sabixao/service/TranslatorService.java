@@ -1,6 +1,5 @@
 package br.com.grupo2.sabixao.sabixao.service;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -8,7 +7,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,41 +18,14 @@ public class TranslatorService {
     
     private static final String TRANSLATE_API = "https://api.mymemory.translated.net/get";
     private final HttpClient httpClient;
-    private final Map<String, String> commonTranslations;
     // Cache de traduções da sessão: evita repetir chamadas HTTP para o mesmo texto
     // (thread-safe — traduções rodam em paralelo no ApiService)
     private final Map<String, String> cache = new ConcurrentHashMap<>();
-    
+
     public TranslatorService() {
         this.httpClient = HttpClient.newBuilder()
             .connectTimeout(java.time.Duration.ofSeconds(5))
             .build();
-        
-        // Dicionário de traduções comuns para fallback
-        this.commonTranslations = new HashMap<>();
-        initCommonTranslations();
-    }
-    
-    private void initCommonTranslations() {
-        // Palavras e frases comuns em perguntas
-        commonTranslations.put("Which", "Qual");
-        commonTranslations.put("What", "O que");
-        commonTranslations.put("Who", "Quem");
-        commonTranslations.put("Where", "Onde");
-        commonTranslations.put("When", "Quando");
-        commonTranslations.put("How", "Como");
-        commonTranslations.put("Why", "Por que");
-        commonTranslations.put("wrote", "escreveu");
-        commonTranslations.put("author", "autor");
-        commonTranslations.put("book", "livro");
-        commonTranslations.put("year", "ano");
-        commonTranslations.put("country", "país");
-        commonTranslations.put("city", "cidade");
-        commonTranslations.put("capital", "capital");
-        commonTranslations.put("president", "presidente");
-        commonTranslations.put("war", "guerra");
-        commonTranslations.put("True", "Verdadeiro");
-        commonTranslations.put("False", "Falso");
     }
     
     /**
@@ -118,27 +89,5 @@ public class TranslatorService {
         System.out.println("    📝 Usando texto original");
         cache.put(text, text); // Cachear a falha também: evita repetir timeout de 3s no mesmo texto
         return text; // Retorna original se a tradução falhar
-    }
-    
-    /**
-     * Traduz múltiplas strings (otimizado para lotes pequenos)
-     */
-    public String[] translateBatch(String[] texts) {
-        String[] translated = new String[texts.length];
-        
-        for (int i = 0; i < texts.length; i++) {
-            translated[i] = translateToPortuguese(texts[i]);
-            
-            // Pequeno delay para não sobrecarregar a API gratuita
-            if (i < texts.length - 1) {
-                try {
-                    Thread.sleep(200); // 200ms entre traduções
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-        
-        return translated;
     }
 }

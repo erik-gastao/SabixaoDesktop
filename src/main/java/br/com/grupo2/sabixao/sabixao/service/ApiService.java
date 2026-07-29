@@ -1,9 +1,9 @@
 package br.com.grupo2.sabixao.sabixao.service;
 
-import br.com.grupo2.sabixao.sabixao.model.Question;
+import br.com.grupo2.sabixao.sabixao.model.Pergunta;
 import br.com.grupo2.sabixao.sabixao.model.TriviaQuestion;
 import br.com.grupo2.sabixao.sabixao.model.TriviaResponse;
-import br.com.grupo2.sabixao.sabixao.model.User;
+import br.com.grupo2.sabixao.sabixao.model.Usuario;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.net.URI;
@@ -19,7 +19,7 @@ import java.util.concurrent.Future;
 
 /**
  * Serviço para comunicação com APIs externas
- * Integra com Open Trivia Database (https://opentrivia.com)
+ * Integra com Open Trivia Database (https://opentdb.com)
  */
 public class ApiService {
     
@@ -52,9 +52,9 @@ public class ApiService {
      * @param category ID da categoria (opcional)
      * @return Lista de perguntas convertidas para o modelo interno
      */
-    public List<Question> fetchTriviaQuestions(int amount, String difficulty, String category) {
+    public List<Pergunta> fetchTriviaQuestions(int amount, String difficulty, String category) {
         // Tentar API principal primeiro
-        List<Question> questions = tryFetchFromMainAPI(amount, difficulty, category);
+        List<Pergunta> questions = tryFetchFromMainAPI(amount, difficulty, category);
         
         // Se falhou, tentar API alternativa
         if (questions.isEmpty()) {
@@ -62,18 +62,15 @@ public class ApiService {
             questions = tryFetchFromBackupAPI(amount, difficulty);
         }
         
-        // IMPORTANTE: Como a tradução em tempo real é muito lenta,
-        // vamos retornar perguntas em inglês
-        // O usuário pode explicar na apresentação que são perguntas reais de API externa
-        System.out.println("ℹ️  NOTA: Perguntas em inglês (API externa internacional)");
-        
+        // As perguntas já vêm traduzidas de convertTriviaToQuestions.
+        // Termos sem tradução (nomes próprios, siglas) permanecem em inglês.
         return questions;
     }
     
     /**
      * Tenta buscar da API principal (Open Trivia)
      */
-    private List<Question> tryFetchFromMainAPI(int amount, String difficulty, String category) {
+    private List<Pergunta> tryFetchFromMainAPI(int amount, String difficulty, String category) {
         try {
             // Construir URL com parâmetros
             StringBuilder url = new StringBuilder(TRIVIA_API_URL);
@@ -128,7 +125,7 @@ public class ApiService {
     /**
      * Tenta buscar da API alternativa (The Trivia API)
      */
-    private List<Question> tryFetchFromBackupAPI(int amount, String difficulty) {
+    private List<Pergunta> tryFetchFromBackupAPI(int amount, String difficulty) {
         try {
             StringBuilder url = new StringBuilder(BACKUP_API_URL);
             url.append("?limit=").append(Math.min(amount, 50));
@@ -167,7 +164,7 @@ public class ApiService {
     /**
      * Parseia resposta da API alternativa
      */
-    private List<Question> parseBackupAPIResponse(String jsonResponse) {
+    private List<Pergunta> parseBackupAPIResponse(String jsonResponse) {
         try {
             // A API alternativa retorna array direto — converter para TriviaQuestion
             // e reutilizar o mesmo pipeline de tradução/embaralhamento da API principal
@@ -205,51 +202,51 @@ public class ApiService {
      * Converte perguntas da API externa para o modelo interno,
      * traduzindo tudo em paralelo no pool
      */
-    private List<Question> convertTriviaToQuestions(List<TriviaQuestion> triviaQuestions) {
+    private List<Pergunta> convertTriviaToQuestions(List<TriviaQuestion> triviaQuestions) {
         System.out.println("🌍 Traduzindo perguntas para português (em paralelo)...");
 
         // 1ª passada: disparar TODAS as traduções de uma vez no pool (8 simultâneas)
-        List<Future<String>> textosFut = new ArrayList<>();
-        List<Future<String>> corretasFut = new ArrayList<>();
-        List<List<Future<String>>> incorretasFut = new ArrayList<>();
+        List<Future<String>> textFutures = new ArrayList<>();
+        List<Future<String>> correctFutures = new ArrayList<>();
+        List<List<Future<String>>> incorrectFutures = new ArrayList<>();
 
         for (TriviaQuestion tq : triviaQuestions) {
-            textosFut.add(traduzirAsync(decodeHtml(tq.getQuestion())));
-            corretasFut.add(traduzirAsync(decodeHtml(tq.getCorrectAnswer())));
+            textFutures.add(translateAsync(decodeHtml(tq.getQuestion())));
+            correctFutures.add(translateAsync(decodeHtml(tq.getCorrectAnswer())));
 
             List<Future<String>> inc = new ArrayList<>();
             for (String incorrect : tq.getIncorrectAnswers()) {
-                inc.add(traduzirAsync(decodeHtml(incorrect)));
+                inc.add(translateAsync(decodeHtml(incorrect)));
             }
-            incorretasFut.add(inc);
+            incorrectFutures.add(inc);
         }
 
         // 2ª passada: montar as perguntas com os resultados
-        List<Question> questions = new ArrayList<>();
+        List<Pergunta> questions = new ArrayList<>();
         for (int i = 0; i < triviaQuestions.size(); i++) {
             TriviaQuestion tq = triviaQuestions.get(i);
-            Question q = new Question();
+            Pergunta q = new Pergunta();
 
-            q.setTexto(obterTraducao(textosFut.get(i), decodeHtml(tq.getQuestion())));
+            q.setTexto(getTranslation(textFutures.get(i), decodeHtml(tq.getQuestion())));
             q.setCategoria(tq.getCategory());
             q.setDificuldade(tq.getDifficulty().toUpperCase());
 
             // Guardar a referência da tradução da correta — re-traduzir não é
             // determinístico e quebrava o indexOf após o shuffle
-            String correctTranslated = obterTraducao(corretasFut.get(i), decodeHtml(tq.getCorrectAnswer()));
-            List<String> opcoes = new ArrayList<>();
-            opcoes.add(correctTranslated);
+            String correctTranslated = getTranslation(correctFutures.get(i), decodeHtml(tq.getCorrectAnswer()));
+            List<String> options = new ArrayList<>();
+            options.add(correctTranslated);
 
-            List<Future<String>> inc = incorretasFut.get(i);
-            List<String> incOriginais = tq.getIncorrectAnswers();
+            List<Future<String>> inc = incorrectFutures.get(i);
+            List<String> originalIncorrect = tq.getIncorrectAnswers();
             for (int j = 0; j < inc.size(); j++) {
-                opcoes.add(obterTraducao(inc.get(j), decodeHtml(incOriginais.get(j))));
+                options.add(getTranslation(inc.get(j), decodeHtml(originalIncorrect.get(j))));
             }
 
             // Embaralhar e localizar a correta pela referência já traduzida
-            Collections.shuffle(opcoes);
-            q.setOpcoes(opcoes);
-            q.setRespostaCorreta(opcoes.indexOf(correctTranslated));
+            Collections.shuffle(options);
+            q.setOpcoes(options);
+            q.setRespostaCorreta(options.indexOf(correctTranslated));
 
             questions.add(q);
         }
@@ -261,14 +258,14 @@ public class ApiService {
     /**
      * Dispara uma tradução no pool paralelo
      */
-    private Future<String> traduzirAsync(String texto) {
+    private Future<String> translateAsync(String texto) {
         return translationPool.submit(() -> translator.translateToPortuguese(texto));
     }
 
     /**
      * Espera o resultado de uma tradução; em caso de erro devolve o texto original
      */
-    private String obterTraducao(Future<String> futuro, String fallback) {
+    private String getTranslation(Future<String> futuro, String fallback) {
         try {
             return futuro.get();
         } catch (Exception e) {
@@ -303,7 +300,7 @@ public class ApiService {
      * @param user O usuário a ser registrado
      * @return true se o registro foi bem-sucedido
      */
-    public boolean registerUser(User user) {
+    public boolean registerUser(Usuario user) {
         try {
             // gson.toJson escapa aspas e caracteres especiais — String.format quebrava o payload
             String jsonBody = gson.toJson(user);
@@ -330,10 +327,10 @@ public class ApiService {
      * @param senha Senha do usuário
      * @return O usuário se autenticado com sucesso, null caso contrário
      */
-    public User loginUser(String nome, String senha) {
+    public Usuario loginUser(String nome, String senha) {
         try {
             // gson.toJson escapa aspas e caracteres especiais — String.format quebrava o payload
-            String jsonBody = gson.toJson(new User(nome, senha));
+            String jsonBody = gson.toJson(new Usuario(nome, senha));
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/users/login"))
@@ -345,8 +342,8 @@ public class ApiService {
                 HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                // TODO: Parse JSON response para criar objeto User
-                return new User(nome, senha);
+                // TODO: Parse JSON response para criar objeto Usuario
+                return new Usuario(nome, senha);
             }
             return null;
         } catch (IOException | InterruptedException e) {

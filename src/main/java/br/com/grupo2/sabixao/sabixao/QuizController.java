@@ -1,6 +1,6 @@
 package br.com.grupo2.sabixao.sabixao;
 
-import br.com.grupo2.sabixao.sabixao.model.Question;
+import br.com.grupo2.sabixao.sabixao.model.Pergunta;
 import br.com.grupo2.sabixao.sabixao.service.ApiService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -49,7 +49,7 @@ public class QuizController {
     @FXML
     private Label tempoLabel;
 
-    private List<Question> perguntas;
+    private List<Pergunta> perguntas;
     private int perguntaAtual = 0;
     private int pontuacao = 0;
     private int tempoRestante = 30; // segundos
@@ -59,9 +59,11 @@ public class QuizController {
     private ApiService apiService;
 
     /**
-     * Inicializa o quiz com os dados do jogador
+     * Inicia o quiz com os dados do jogador.
+     * Nome diferente de initialize() de propósito: o FXMLLoader chama
+     * initialize() sozinho e sem argumentos ao carregar a tela.
      */
-    public void initialize(String nome, String pin) {
+    public void iniciar(String nome, String pin) {
         this.nomeJogador = nome;
         this.pin = pin;
         this.perguntaAtual = 0;
@@ -69,20 +71,20 @@ public class QuizController {
         this.apiService = new ApiService();
 
         // Buscar perguntas da API em segundo plano
-        carregarPerguntasAPI();
+        carregarPerguntas();
     }
 
     /**
      * Carrega perguntas da API externa
      */
-    private void carregarPerguntasAPI() {
+    private void carregarPerguntas() {
         mostrarCarregamento();
         
         // Executar em thread separada para não travar a UI
         new Thread(() -> {
             try {
                 System.out.println("\n=== TENTANDO BUSCAR PERGUNTAS DA API ===");
-                System.out.println("URL: https://opentrivia.com/api.php?amount=10&difficulty=medium&type=multiple");
+                System.out.println("URL: https://opentdb.com/api.php?amount=10&difficulty=medium&type=multiple");
                 
                 // Buscar 10 perguntas de dificuldade média
                 perguntas = apiService.fetchTriviaQuestions(10, "medium", null);
@@ -147,20 +149,6 @@ public class QuizController {
     }
 
     /**
-     * Mostra mensagem de erro
-     */
-    private void mostrarErro(String mensagem) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Aviso");
-        alert.setHeaderText(null);
-        alert.setContentText(mensagem);
-        alert.show();
-        
-        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(2), e -> alert.close()));
-        autoClose.play();
-    }
-
-    /**
      * Carrega a pergunta atual na tela
      */
     private void carregarPergunta() {
@@ -169,7 +157,7 @@ public class QuizController {
             return;
         }
 
-        Question pergunta = perguntas.get(perguntaAtual);
+        Pergunta pergunta = perguntas.get(perguntaAtual);
 
         // Atualizar labels
         perguntaLabel.setText(pergunta.getTexto());
@@ -200,22 +188,22 @@ public class QuizController {
      * Manipula a seleção de uma opção
      */
     @FXML
-    private void handleOpcaoA() {
+    private void aoEscolherOpcaoA() {
         verificarResposta(0);
     }
 
     @FXML
-    private void handleOpcaoB() {
+    private void aoEscolherOpcaoB() {
         verificarResposta(1);
     }
 
     @FXML
-    private void handleOpcaoC() {
+    private void aoEscolherOpcaoC() {
         verificarResposta(2);
     }
 
     @FXML
-    private void handleOpcaoD() {
+    private void aoEscolherOpcaoD() {
         verificarResposta(3);
     }
 
@@ -226,7 +214,7 @@ public class QuizController {
         pararTimer();
         habilitarBotoes(false);
 
-        Question pergunta = perguntas.get(perguntaAtual);
+        Pergunta pergunta = perguntas.get(perguntaAtual);
         boolean acertou = pergunta.verificarResposta(opcaoSelecionada);
 
         if (acertou) {
@@ -326,7 +314,7 @@ public class QuizController {
         // TODO: Voltar para tela inicial ou ranking
 
         try {
-            App.setRoot("home");
+            App.setRoot("inicio");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -335,22 +323,22 @@ public class QuizController {
     /**
      * Cria perguntas de exemplo para teste
      */
-    private List<Question> criarPerguntasExemplo() {
-        List<Question> exemplos = new ArrayList<>();
+    private List<Pergunta> criarPerguntasExemplo() {
+        List<Pergunta> exemplos = new ArrayList<>();
 
-        Question q1 = new Question();
+        Pergunta q1 = new Pergunta();
         q1.setTexto("Qual é a capital do Brasil?");
         q1.setOpcoes(List.of("São Paulo", "Rio de Janeiro", "Brasília", "Salvador"));
         q1.setRespostaCorreta(2);
         exemplos.add(q1);
 
-        Question q2 = new Question();
+        Pergunta q2 = new Pergunta();
         q2.setTexto("Quanto é 2 + 2?");
         q2.setOpcoes(List.of("3", "4", "5", "6"));
         q2.setRespostaCorreta(1);
         exemplos.add(q2);
 
-        Question q3 = new Question();
+        Pergunta q3 = new Pergunta();
         q3.setTexto("Qual linguagem é usada para desenvolvimento Android nativo?");
         q3.setOpcoes(List.of("Swift", "Kotlin", "Python", "Ruby"));
         q3.setRespostaCorreta(1);

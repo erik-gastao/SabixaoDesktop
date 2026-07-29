@@ -5,7 +5,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 import java.io.IOException;
 
-public class HomeController {
+public class InicioController {
 
     @FXML
     private TextField nomeField;
@@ -17,41 +17,28 @@ public class HomeController {
      * Valida os campos e inicia o jogo/quiz
      */
     @FXML
-    private void handleComecar() {
+    private void aoComecar() {
         String nome = nomeField.getText().trim();
         String pin = pinField.getText().trim();
 
         if (nome.isEmpty() || pin.isEmpty()) {
-            showAlert("Campos Vazios", "Por favor, preencha todos os campos!");
+            mostrarAlerta("Campos Vazios", "Por favor, preencha todos os campos!");
             return;
         }
 
-        if (!isValidPin(pin)) {
-            showAlert("PIN Inválido", "O PIN deve conter apenas números!");
+        if (!pinValido(pin)) {
+            mostrarAlerta("PIN Inválido", "O PIN deve conter apenas números!");
             return;
         }
 
         // Iniciar o quiz - irá buscar perguntas da API externa
         System.out.println("Iniciando jogo - Nome: " + nome + ", PIN: " + pin);
-        
+
         try {
-            // Carregar tela do quiz
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-                getClass().getResource("quiz.fxml")
-            );
-            javafx.scene.Parent root = loader.load();
-            
-            // Passar dados para o QuizController
-            QuizController controller = loader.getController();
-            controller.initialize(nome, pin);
-            
-            // Trocar a cena
-            javafx.stage.Stage stage = (javafx.stage.Stage) nomeField.getScene().getWindow();
-            stage.getScene().setRoot(root);
-            
+            App.setRoot("quiz", (QuizController controller) -> controller.iniciar(nome, pin));
         } catch (Exception e) {
             e.printStackTrace();
-            showAlert("Erro", "Não foi possível iniciar o quiz: " + e.getMessage());
+            mostrarAlerta("Erro", "Não foi possível iniciar o quiz: " + e.getMessage());
         }
     }
 
@@ -59,26 +46,26 @@ public class HomeController {
      * Navega para a tela de login/cadastro
      */
     @FXML
-    private void handleLogin() {
+    private void aoAbrirLogin() {
         try {
-            App.setRoot("login-form");
+            App.setRoot("login");
         } catch (IOException e) {
             e.printStackTrace();
-            showAlert("Erro", "Não foi possível abrir a tela de login!");
+            mostrarAlerta("Erro", "Não foi possível abrir a tela de login!");
         }
     }
 
     /**
      * Valida se o PIN contém apenas números
      */
-    private boolean isValidPin(String pin) {
+    private boolean pinValido(String pin) {
         return pin.matches("\\d+");
     }
 
     /**
      * Exibe alertas para o usuário
      */
-    private void showAlert(String title, String message) {
+    private void mostrarAlerta(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);

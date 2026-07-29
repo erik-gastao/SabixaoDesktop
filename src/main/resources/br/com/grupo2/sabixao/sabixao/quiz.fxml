@@ -72,22 +72,22 @@
             <!-- Botões de resposta -->
             <VBox alignment="CENTER" spacing="15.0">
                <children>
-                  <Button fx:id="opcaoAButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#handleOpcaoA" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="A) São Paulo">
+                  <Button fx:id="opcaoAButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoA" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="A) São Paulo">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoBButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#handleOpcaoB" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="B) Rio de Janeiro">
+                  <Button fx:id="opcaoBButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoB" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="B) Rio de Janeiro">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoCButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#handleOpcaoC" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="C) Brasília">
+                  <Button fx:id="opcaoCButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoC" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="C) Brasília">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoDButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#handleOpcaoD" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="D) Salvador">
+                  <Button fx:id="opcaoDButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoD" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="D) Salvador">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>

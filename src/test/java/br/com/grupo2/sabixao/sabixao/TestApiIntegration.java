@@ -1,6 +1,6 @@
 package br.com.grupo2.sabixao.sabixao;
 
-import br.com.grupo2.sabixao.sabixao.model.Question;
+import br.com.grupo2.sabixao.sabixao.model.Pergunta;
 import br.com.grupo2.sabixao.sabixao.service.ApiService;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class TestApiIntegration {
         
         System.out.println("Buscando 5 perguntas de dificuldade média...\n");
         
-        List<Question> questions = apiService.fetchTriviaQuestions(5, "medium", null);
+        List<Pergunta> questions = apiService.fetchTriviaQuestions(5, "medium", null);
         
         if (questions.isEmpty()) {
             System.out.println("❌ ERRO: Nenhuma pergunta foi retornada!");
@@ -29,7 +29,7 @@ public class TestApiIntegration {
         System.out.println("✅ SUCESSO! " + questions.size() + " perguntas carregadas da API:\n");
         
         for (int i = 0; i < questions.size(); i++) {
-            Question q = questions.get(i);
+            Pergunta q = questions.get(i);
             System.out.println("--- PERGUNTA " + (i + 1) + " ---");
             System.out.println("Categoria: " + q.getCategoria());
             System.out.println("Dificuldade: " + q.getDificuldade());

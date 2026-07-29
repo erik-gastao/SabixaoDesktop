@@ -1,146 +1,134 @@
 # Sabixão Desktop - Aplicação JavaFX
 
 ## 📋 Descrição
-Aplicação desktop JavaFX para o quiz Sabixão, com interface gráfica moderna e integração com backend REST API.
+Aplicação desktop JavaFX para o quiz Sabixão, com interface gráfica e integração com API externa de perguntas (Open Trivia Database).
 
-## ✨ Funcionalidades Implementadas
+## 🚀 Como Executar
 
-### 🏠 Tela Inicial (home.fxml)
-- Campo para inserir nome do jogador
-- Campo para inserir PIN do quiz
-- Validação de campos vazios
-- Validação de PIN (apenas números)
-- Botão "COMEÇAR" - inicia o jogo com validações
-- Botão "LOGIN" - navega para tela de cadastro
+### Pré-requisitos
+- **JDK 17 ou superior** (testado com Temurin 21)
+- Maven **não** precisa estar instalado — o projeto inclui o Maven Wrapper
 
-### 🔐 Tela de Login/Cadastro (login.fxml)
-- Campo para nome do usuário
-- Campo para senha
-- Campo para confirmar senha
-- Validações implementadas:
-  - Campos vazios
-  - Nome mínimo de 3 caracteres
-  - Senha mínima de 6 caracteres
-  - Confirmação de senha
-- Botão "CRIAR CONTA" - registra novo usuário
-- Botão "VOLTAR" - retorna à tela inicial
+### Executar a aplicação
+
+Windows:
+```cmd
+mvnw javafx:run
+```
+
+Linux / macOS:
+```bash
+./mvnw javafx:run
+```
+
+Se o `java` do seu PATH for antigo, aponte o `JAVA_HOME` para o JDK 17+:
+```cmd
+set "JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
+mvnw javafx:run
+```
+
+### Compilar
+```bash
+./mvnw clean package
+```
+
+### Rodar os testes
+```bash
+./mvnw test
+```
+Carrega as 4 telas e confere que todo `onAction` do FXML tem método
+correspondente no controller e que as imagens referenciadas existem.
+
+### Testar a integração com a API (sem abrir a interface)
+`TestApiIntegration` tem um `main` que busca perguntas e imprime no console:
+```bash
+./mvnw clean test-compile
+java -cp "target/classes;target/test-classes;<caminho-do-gson.jar>" br.com.grupo2.sabixao.sabixao.TestApiIntegration
+```
+
+## ✨ Funcionalidades
+
+### 🏠 Tela Inicial (`inicio.fxml`)
+- Campos de nome do jogador e PIN do quiz
+- Validação de campos vazios e de PIN (apenas números)
+- **COMEÇAR** — inicia o quiz
+- **LOGIN** — vai para a tela de login
+
+### 🔐 Login (`login.fxml`)
+- Nome e senha, com validação (nome ≥ 3 caracteres, senha ≥ 6)
+- **ENTRAR**, **VOLTAR** e link para criar conta
+- ⚠️ Autenticação ainda não integrada ao backend — o login sempre aceita
+
+### 📝 Criar Conta (`criar-conta.fxml`)
+- Nome, senha e confirmação de senha, com validação
+- ⚠️ Cadastro ainda não integrado ao backend — nada é persistido
+
+### ❓ Quiz (`quiz.fxml`)
+- 10 perguntas de múltipla escolha vindas da API externa
+- Timer de 30 segundos por pergunta com barra de progresso
+- Pontuação: 100 pontos + 2 por segundo restante
+- Cai em perguntas de exemplo em português se a API estiver indisponível
 
 ## 🏗️ Estrutura do Projeto
 
 ```
 src/main/java/br/com/grupo2/sabixao/sabixao/
-├── App.java                    # Classe principal JavaFX
-├── HomeController.java         # Controller da tela inicial
-├── LoginController.java        # Controller da tela de cadastro
+├── App.java                     # Classe principal JavaFX e troca de telas
+├── InicioController.java        # Tela inicial
+├── LoginController.java         # Tela de login
+├── CriarContaController.java    # Tela de cadastro
+├── QuizController.java          # Tela do quiz
 ├── model/
-│   └── User.java              # Modelo de dados do usuário
+│   ├── Usuario.java             # Usuário
+│   ├── Pergunta.java            # Pergunta no modelo interno
+│   ├── TriviaQuestion.java      # Pergunta como vem da API externa
+│   └── TriviaResponse.java      # Envelope da resposta da API
 └── service/
-    └── ApiService.java        # Serviço para comunicação com API
+    ├── ApiService.java          # Busca perguntas e fala com o backend
+    └── TranslatorService.java   # Tradução EN → PT-BR
 
-src/main/resources/br/com/grupo2/sabixao/sabixao/
-├── home.fxml                  # Interface da tela inicial
-└── login.fxml                 # Interface da tela de cadastro
+src/main/resources/
+├── br/com/grupo2/sabixao/sabixao/   # inicio, login, criar-conta, quiz (.fxml)
+└── images/                          # background e logo
+
+src/test/java/br/com/grupo2/sabixao/sabixao/
+├── CarregamentoTelasTest.java   # garante que as 4 telas carregam
+└── TestApiIntegration.java      # main() para testar a API no console
 ```
 
-## 🚀 Como Executar
+📐 O padrão de nomes está em **[docs/convencoes.md](docs/convencoes.md)** — leia
+antes de criar classe, tela ou documento novo.
 
-### Pré-requisitos
-- Java 11 ou superior
-- Maven 3.6+
+## 🔌 APIs Externas
 
-### Executar a aplicação
-```bash
-mvn clean javafx:run
-```
+Perguntas vêm da **Open Trivia Database** (`https://opentdb.com/api.php`), com **The Trivia API** (`https://the-trivia-api.com`) como alternativa automática se a principal falhar.
 
-### Compilar
-```bash
-mvn clean package
-```
+A tradução EN → PT-BR usa a API pública do **MyMemory**, em paralelo (8 threads) e com cache por sessão. Termos sem tradução (nomes próprios, siglas) ficam em inglês.
 
-## 🔌 Integração com Backend
+## 🔧 Backend Próprio (ainda não existe)
 
-A classe `ApiService` está preparada para integração com uma API REST. Por padrão, a URL base é:
-```
-http://localhost:8080/api
-```
+`ApiService` já tem os métodos prontos apontando para `http://localhost:8080/api`, aguardando o backend:
 
-### Endpoints esperados:
+| Método | Endpoint esperado |
+|---|---|
+| `registerUser(User)` | `POST /api/users/register` |
+| `loginUser(nome, senha)` | `POST /api/users/login` |
+| `validatePin(pin)` | `GET /api/quiz/validate-pin?pin=...` |
 
-#### 1. Registrar Usuário
-```
-POST /api/users/register
-Content-Type: application/json
+Nenhum controller chama esses métodos ainda — as telas de login e cadastro são apenas visuais.
 
-{
-  "nome": "João Silva",
-  "senha": "senha123"
-}
-```
+### A fazer no backend
+1. **API REST** (Spring Boot) — autenticação, CRUD de usuários, quizzes/PINs, pontuações
+2. **Banco de dados** — H2 em desenvolvimento, PostgreSQL ou MySQL em produção
+3. **Segurança** — hash de senha com BCrypt, JWT e CORS
+   ⚠️ Hoje a senha trafega em texto plano no JSON — resolver junto com o backend
 
-#### 2. Login
-```
-POST /api/users/login
-Content-Type: application/json
+## 🛠️ Tecnologias
 
-{
-  "nome": "João Silva",
-  "senha": "senha123"
-}
-```
-
-#### 3. Validar PIN do Quiz
-```
-GET /api/quiz/validate-pin?pin=12345
-```
-
-## 🎨 Melhorias de Responsividade
-
-- Tamanhos mínimos definidos para janela (720x480)
-- Campos com `promptText` para melhor UX
-- Labels com fonte em negrito
-- BorderPane e FlowPane para layout responsivo
-- Botões com efeito visual e cursor pointer
-
-## 📝 Próximos Passos
-
-### Backend a ser criado:
-
-1. **API REST com Spring Boot** (recomendado)
-   - Endpoints para autenticação
-   - CRUD de usuários
-   - Gerenciamento de quizzes e PINs
-   - Registro de pontuações
-
-2. **Banco de Dados**
-   - H2 (para desenvolvimento)
-   - PostgreSQL ou MySQL (para produção)
-   - Entidades: User, Quiz, Question, Answer, Score
-
-3. **Segurança**
-   - Hash de senhas (BCrypt)
-   - JWT para autenticação
-   - CORS configurado para aceitar requisições do desktop
-
-## 🛠️ Tecnologias Utilizadas
-
-- JavaFX 13
-- Java 11
-- Maven
-- HttpClient (Java 11) para requisições HTTP
-
-## 📦 Dependências Adicionais Recomendadas
-
-Para adicionar ao `pom.xml`:
-
-```xml
-<!-- Para trabalhar com JSON -->
-<dependency>
-    <groupId>com.google.code.gson</groupId>
-    <artifactId>gson</artifactId>
-    <version>2.10.1</version>
-</dependency>
-```
+- Java 17 (compilado com `release 17`)
+- JavaFX 21.0.1
+- Gson 2.10.1
+- Maven Wrapper 3.3.2 / Maven 3.9.9
 
 ## 👥 Autores
 Grupo 2 - Sabixão Desktop
