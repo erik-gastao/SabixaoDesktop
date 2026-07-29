@@ -6,7 +6,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import java.io.IOException;
 
-public class LoginController {
+public class LoginFormController {
 
     @FXML
     private TextField nomeField;
@@ -14,20 +14,16 @@ public class LoginController {
     @FXML
     private PasswordField senhaField;
 
-    @FXML
-    private PasswordField confirmarSenhaField;
-
     /**
-     * Valida os campos e cria uma nova conta
+     * Valida os campos e faz login
      */
     @FXML
-    private void handleCriarConta() {
+    private void handleEntrar() {
         String nome = nomeField.getText().trim();
         String senha = senhaField.getText();
-        String confirmarSenha = confirmarSenhaField.getText();
 
         // Validações
-        if (nome.isEmpty() || senha.isEmpty() || confirmarSenha.isEmpty()) {
+        if (nome.isEmpty() || senha.isEmpty()) {
             showAlert("Campos Vazios", "Por favor, preencha todos os campos!", Alert.AlertType.WARNING);
             return;
         }
@@ -38,21 +34,29 @@ public class LoginController {
         }
 
         if (senha.length() < 6) {
-            showAlert("Senha Fraca", "A senha deve ter pelo menos 6 caracteres!", Alert.AlertType.WARNING);
+            showAlert("Senha Inválida", "A senha deve ter pelo menos 6 caracteres!", Alert.AlertType.WARNING);
             return;
         }
 
-        if (!senha.equals(confirmarSenha)) {
-            showAlert("Senhas Diferentes", "As senhas não coincidem!", Alert.AlertType.ERROR);
-            return;
-        }
-
-        // TODO: Integrar com backend/API para salvar o usuário
-        System.out.println("Criando conta - Nome: " + nome);
-        showAlert("Sucesso", "Conta criada com sucesso para " + nome + "!", Alert.AlertType.INFORMATION);
+        // TODO: Integrar com backend/API para validar login
+        System.out.println("Fazendo login - Nome: " + nome);
+        showAlert("Sucesso", "Login realizado com sucesso!\nBem-vindo, " + nome + "!", Alert.AlertType.INFORMATION);
         
-        // Limpar campos após criar conta
+        // TODO: Navegar para tela do quiz após login bem-sucedido
         limparCampos();
+    }
+
+    /**
+     * Navega para a tela de criar conta
+     */
+    @FXML
+    private void handleCriarConta() {
+        try {
+            App.setRoot("criar-conta");
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Erro", "Não foi possível abrir a tela de criar conta!", Alert.AlertType.ERROR);
+        }
     }
 
     /**
@@ -74,7 +78,6 @@ public class LoginController {
     private void limparCampos() {
         nomeField.clear();
         senhaField.clear();
-        confirmarSenhaField.clear();
     }
 
     /**
