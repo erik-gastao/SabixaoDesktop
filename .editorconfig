@@ -1,0 +1,21 @@
+# Encoding e fim de linha iguais para todo mundo do grupo.
+# Sem isso, editor com padrão ANSI no Windows reabre os arquivos com os acentos
+# corrompidos ("PontuaÃ§Ã£o") e o git fica avisando de troca de LF/CRLF.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.java]
+indent_size = 4
+
+[*.{xml,fxml,css}]
+indent_size = 4
+
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false

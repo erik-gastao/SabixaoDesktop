@@ -5,6 +5,7 @@ import br.com.grupo2.sabixao.sabixao.service.ApiService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -15,12 +16,27 @@ import javafx.util.Duration;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Controller para a tela do quiz
  * Integrado com Open Trivia Database API
  */
 public class QuizController {
+
+    private static final Logger LOG = Logger.getLogger(QuizController.class.getName());
+
+    /** Tempo de cada pergunta. O timer e o cycleCount da Timeline derivam daqui. */
+    private static final int TEMPO_POR_PERGUNTA = 30;
+    private static final int TOTAL_PERGUNTAS = 10;
+    private static final String DIFICULDADE = "medium";
+    private static final int PONTOS_BASE = 100;
+    private static final int PONTOS_POR_SEGUNDO_RESTANTE = 2;
+    /** Pausa mostrando o feedback antes de trocar de pergunta. */
+    private static final Duration PAUSA_ENTRE_PERGUNTAS = Duration.seconds(2);
+    /** Marcador de resposta quando o tempo acaba sem escolha. */
+    private static final int SEM_RESPOSTA = -1;
 
     @FXML
     private Label perguntaLabel;
@@ -52,7 +68,7 @@ public class QuizController {
     private List<Pergunta> perguntas;
     private int perguntaAtual = 0;
     private int pontuacao = 0;
-    private int tempoRestante = 30; // segundos
+    private int tempoRestante = TEMPO_POR_PERGUNTA;
     private Timeline timeline;
     private String nomeJogador;
     private String pin;
@@ -70,53 +86,60 @@ public class QuizController {
         this.pontuacao = 0;
         this.apiService = new ApiService();
 
-        // Buscar perguntas da API em segundo plano
         carregarPerguntas();
     }
 
     /**
-     * Carrega perguntas da API externa
+     * Busca as perguntas da API sem travar a interface.
+     *
+     * Usa javafx.concurrent.Task em vez de Thread crua: os handlers
+     * onSucceeded/onFailed já rodam na thread do JavaFX, o que dispensa
+     * Platform.runLater e garante que falha inesperada não passe em silêncio.
      */
     private void carregarPerguntas() {
         mostrarCarregamento();
-        
-        // Executar em thread separada para não travar a UI
-        new Thread(() -> {
-            try {
-                System.out.println("\n=== TENTANDO BUSCAR PERGUNTAS DA API ===");
-                System.out.println("URL: https://opentdb.com/api.php?amount=10&difficulty=medium&type=multiple");
-                
-                // Buscar 10 perguntas de dificuldade média
-                perguntas = apiService.fetchTriviaQuestions(10, "medium", null);
-                
-                Platform.runLater(() -> {
-                    if (perguntas == null || perguntas.isEmpty()) {
-                        System.out.println("❌ API retornou lista vazia - usando perguntas de exemplo");
-                        mostrarInfo("⚠️ Modo Offline\n\nNão foi possível conectar com a API externa.\nUsando perguntas de exemplo em português.");
-                        perguntas = criarPerguntasExemplo();
-                    } else {
-                        System.out.println("✅ API FUNCIONOU! " + perguntas.size() + " perguntas carregadas!");
-                        mostrarSucesso("✅ API Externa Conectada!\n\n" + perguntas.size() + " perguntas reais carregadas.\n\nNOTA: Perguntas em inglês (API internacional).");
-                    }
-                    carregarPergunta();
-                });
-            } catch (Exception e) {
-                System.err.println("❌ ERRO AO CONECTAR COM API: " + e.getMessage());
-                e.printStackTrace();
-                Platform.runLater(() -> {
-                    mostrarInfo("⚠️ Modo Offline\n\nErro ao conectar: " + e.getMessage() + "\n\nUsando perguntas de exemplo para demonstração.");
-                    perguntas = criarPerguntasExemplo();
-                    carregarPergunta();
-                });
+
+        Task<List<Pergunta>> busca = new Task<>() {
+            @Override
+            protected List<Pergunta> call() {
+                LOG.log(Level.INFO, "Buscando {0} perguntas (dificuldade {1})",
+                    new Object[] {TOTAL_PERGUNTAS, DIFICULDADE});
+                return apiService.fetchTriviaQuestions(TOTAL_PERGUNTAS, DIFICULDADE, null);
             }
-        }).start();
+        };
+
+        busca.setOnSucceeded(e -> {
+            List<Pergunta> resultado = busca.getValue();
+            if (resultado == null || resultado.isEmpty()) {
+                LOG.warning("API não retornou perguntas - usando exemplos locais");
+                mostrarInfo("Modo Offline\n\nNão foi possível conectar com a API externa.\n"
+                    + "Usando perguntas de exemplo em português.");
+                perguntas = criarPerguntasExemplo();
+            } else {
+                LOG.log(Level.INFO, "{0} perguntas carregadas da API", resultado.size());
+                perguntas = resultado;
+            }
+            carregarPergunta();
+        });
+
+        busca.setOnFailed(e -> {
+            LOG.log(Level.SEVERE, "Erro ao consultar a API", busca.getException());
+            mostrarInfo("Modo Offline\n\nErro ao conectar com a API.\n"
+                + "Usando perguntas de exemplo para demonstração.");
+            perguntas = criarPerguntasExemplo();
+            carregarPergunta();
+        });
+
+        Thread t = new Thread(busca, "busca-perguntas");
+        t.setDaemon(true); // não segura o JVM se a janela fechar durante a busca
+        t.start();
     }
 
     /**
      * Mostra mensagem de carregamento
      */
     private void mostrarCarregamento() {
-        perguntaLabel.setText("🌐 Conectando com API externa...\n\nAguarde alguns segundos");
+        perguntaLabel.setText("Conectando com a API externa...\n\nAguarde alguns segundos");
         habilitarBotoes(false);
     }
 
@@ -129,22 +152,8 @@ public class QuizController {
         alert.setHeaderText(null);
         alert.setContentText(mensagem);
         alert.show();
-        
-        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(3), e -> alert.close()));
-        autoClose.play();
-    }
 
-    /**
-     * Mostra mensagem de sucesso
-     */
-    private void mostrarSucesso(String mensagem) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Sucesso!");
-        alert.setHeaderText(null);
-        alert.setContentText(mensagem);
-        alert.show();
-        
-        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(2), e -> alert.close()));
+        Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(3), e -> alert.close()));
         autoClose.play();
     }
 
@@ -159,7 +168,6 @@ public class QuizController {
 
         Pergunta pergunta = perguntas.get(perguntaAtual);
 
-        // Atualizar labels
         perguntaLabel.setText(pergunta.getTexto());
         perguntaNumeroLabel.setText("Pergunta " + (perguntaAtual + 1) + " de " + perguntas.size());
         pontuacaoLabel.setText("Pontuação: " + pontuacao);
@@ -177,10 +185,7 @@ public class QuizController {
             }
         }
 
-        // Habilitar botões
         habilitarBotoes(true);
-
-        // Iniciar timer
         iniciarTimer();
     }
 
@@ -218,15 +223,15 @@ public class QuizController {
         boolean acertou = pergunta.verificarResposta(opcaoSelecionada);
 
         if (acertou) {
-            pontuacao += calcularPontos();
-            mostrarFeedback("Correto! 🎉", true);
+            pontuacao += calcularPontos(tempoRestante);
+            mostrarFeedback("Correto!", true);
         } else {
-            mostrarFeedback("Incorreto! ❌\nResposta correta: " + 
-                pergunta.getOpcoes().get(pergunta.getRespostaCorreta()), false);
+            String correta = pergunta.getOpcoes().get(pergunta.getRespostaCorreta());
+            String prefixo = opcaoSelecionada == SEM_RESPOSTA ? "Tempo esgotado!" : "Incorreto!";
+            mostrarFeedback(prefixo + "\nResposta correta: " + correta, false);
         }
 
-        // Aguardar 2 segundos e carregar próxima pergunta
-        Timeline delay = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
+        Timeline delay = new Timeline(new KeyFrame(PAUSA_ENTRE_PERGUNTAS, e -> {
             perguntaAtual++;
             carregarPergunta();
         }));
@@ -234,32 +239,33 @@ public class QuizController {
     }
 
     /**
-     * Calcula pontos baseado no tempo restante
+     * Pontuação da pergunta: base fixa mais bônus pelo tempo que sobrou.
+     * Estático e visível para o pacote por causa do teste unitário.
      */
-    private int calcularPontos() {
-        int pontosBase = 100;
-        int bonusTempo = tempoRestante * 2; // 2 pontos por segundo restante
-        return pontosBase + bonusTempo;
+    static int calcularPontos(int tempoRestante) {
+        return PONTOS_BASE + Math.max(0, tempoRestante) * PONTOS_POR_SEGUNDO_RESTANTE;
     }
 
     /**
      * Inicia o timer da pergunta
      */
     private void iniciarTimer() {
-        tempoRestante = 30;
+        pararTimer(); // descarta uma Timeline anterior que ainda estivesse viva
+
+        tempoRestante = TEMPO_POR_PERGUNTA;
         tempoProgressBar.setProgress(1.0);
         tempoLabel.setText(tempoRestante + "s");
 
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             tempoRestante--;
             tempoLabel.setText(tempoRestante + "s");
-            tempoProgressBar.setProgress((double) tempoRestante / 30);
+            tempoProgressBar.setProgress((double) tempoRestante / TEMPO_POR_PERGUNTA);
 
             if (tempoRestante <= 0) {
-                verificarResposta(-1); // Tempo esgotado = resposta errada
+                verificarResposta(SEM_RESPOSTA);
             }
         }));
-        timeline.setCycleCount(30);
+        timeline.setCycleCount(TEMPO_POR_PERGUNTA);
         timeline.play();
     }
 
@@ -269,6 +275,7 @@ public class QuizController {
     private void pararTimer() {
         if (timeline != null) {
             timeline.stop();
+            timeline = null;
         }
     }
 
@@ -292,7 +299,6 @@ public class QuizController {
         alert.setContentText(mensagem);
         alert.show();
 
-        // Fechar automaticamente
         Timeline autoClose = new Timeline(new KeyFrame(Duration.seconds(1.5), e -> alert.close()));
         autoClose.play();
     }
@@ -303,21 +309,36 @@ public class QuizController {
     private void finalizarQuiz() {
         pararTimer();
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Quiz Finalizado!");
-        alert.setHeaderText("Parabéns, " + nomeJogador + "!");
-        alert.setContentText("Sua pontuação final foi: " + pontuacao + " pontos!\n\n" +
-                "Perguntas respondidas: " + perguntas.size());
-        alert.showAndWait();
-
-        // TODO: Salvar pontuação no backend
-        // TODO: Voltar para tela inicial ou ranking
-
-        try {
-            App.setRoot("inicio");
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Libera as threads de tradução do ApiService desta partida: sem isso cada
+        // quiz jogado deixava um pool de 8 threads para trás.
+        if (apiService != null) {
+            apiService.close();
+            apiService = null;
         }
+
+        int pontuacaoFinal = pontuacao;
+        int totalRespondidas = perguntas.size();
+
+        // Platform.runLater é obrigatório aqui: finalizarQuiz é alcançado de dentro
+        // do KeyFrame da Timeline de pausa e showAndWait() lança
+        // IllegalStateException("showAndWait is not allowed during animation or
+        // layout processing") se chamado durante o pulso de animação — o quiz
+        // travava na última pergunta sem nunca exibir o resultado.
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Quiz Finalizado!");
+            alert.setHeaderText("Parabéns, " + nomeJogador + "!");
+            alert.setContentText("Sua pontuação final foi: " + pontuacaoFinal + " pontos!\n\n"
+                + "Perguntas respondidas: " + totalRespondidas + "\n"
+                + "PIN da partida: " + pin);
+            alert.showAndWait();
+
+            try {
+                App.setRoot("inicio");
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, "Falha ao voltar para a tela inicial", e);
+            }
+        });
     }
 
     /**

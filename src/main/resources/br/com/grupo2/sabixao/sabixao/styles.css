@@ -1,0 +1,14 @@
+/*
+ * Estilos compartilhados entre as telas.
+ *
+ * O fundo era um ImageView de tamanho fixo dentro de cada tela: não acompanhava
+ * o redimensionamento da janela e, no quiz, cobria só uma faixa de 150px — o
+ * resto ficava cinza-claro e os textos brancos viravam invisíveis.
+ * Como background CSS, a imagem escala junto com a janela.
+ */
+.tela-fundo {
+    -fx-background-image: url("../../../../../images/background.png");
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+}

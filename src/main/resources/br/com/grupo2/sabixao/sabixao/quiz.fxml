@@ -4,16 +4,14 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane minHeight="480" minWidth="720" prefHeight="480.0" prefWidth="720.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.QuizController">
-   <center>
-      <VBox alignment="CENTER" spacing="20.0" BorderPane.alignment="CENTER">
+<StackPane minHeight="600" minWidth="720" prefHeight="760.0" prefWidth="900.0" styleClass="tela-fundo" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.grupo2.sabixao.sabixao.QuizController">
+   <children>
+      <VBox alignment="CENTER" spacing="20.0">
          <children>
             <!-- Cabeçalho com informações -->
             <HBox alignment="CENTER" spacing="50.0">
@@ -28,35 +26,28 @@
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Label>
-                  <HBox alignment="CENTER" spacing="10.0">
-                     <children>
-                        <Label text="⏱️" textFill="WHITE">
-                           <font>
-                              <Font size="18.0" />
-                           </font>
-                        </Label>
-                        <Label fx:id="tempoLabel" text="30s" textFill="#FFD700">
-                           <font>
-                              <Font name="System Bold" size="16.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
+                  <!-- Sem ícone de relógio: o emoji de cronômetro não existe na fonte
+                       padrão e aparecia como quadrado vazio. O sufixo "s" já diz que é tempo. -->
+                  <Label fx:id="tempoLabel" text="30s" textFill="#FFD700">
+                     <font>
+                        <Font name="System Bold" size="16.0" />
+                     </font>
+                  </Label>
                </children>
                <VBox.margin>
                   <Insets bottom="10.0" />
                </VBox.margin>
             </HBox>
-            
+
             <!-- Barra de progresso do tempo -->
-            <ProgressBar fx:id="tempoProgressBar" prefHeight="10.0" prefWidth="600.0" progress="1.0">
+            <ProgressBar fx:id="tempoProgressBar" maxWidth="600.0" prefHeight="10.0" prefWidth="600.0" progress="1.0">
                <VBox.margin>
                   <Insets bottom="20.0" />
                </VBox.margin>
             </ProgressBar>
-            
+
             <!-- Texto da pergunta -->
-            <VBox alignment="CENTER" prefHeight="120.0" prefWidth="600.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 20;">
+            <VBox alignment="CENTER" maxWidth="600.0" minHeight="120.0" style="-fx-background-color: rgba(0, 0, 0, 0.35); -fx-background-radius: 15; -fx-padding: 20;">
                <children>
                   <Label fx:id="perguntaLabel" alignment="CENTER" text="Qual é a capital do Brasil?" textAlignment="CENTER" textFill="WHITE" wrapText="true">
                      <font>
@@ -68,26 +59,29 @@
                   <Insets bottom="30.0" />
                </VBox.margin>
             </VBox>
-            
-            <!-- Botões de resposta -->
+
+            <!-- Botões de resposta.
+                 O dropshadow precisa dos parâmetros: "-fx-effect: dropshadow;" sozinho
+                 é inválido, o JavaFX logava IllegalArgumentException em cada render e a
+                 sombra nunca aparecia. -->
             <VBox alignment="CENTER" spacing="15.0">
                <children>
-                  <Button fx:id="opcaoAButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoA" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="A) São Paulo">
+                  <Button fx:id="opcaoAButton" alignment="CENTER_LEFT" maxWidth="600.0" mnemonicParsing="false" onAction="#aoEscolherOpcaoA" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.45), 8, 0, 2, 3); -fx-alignment: center-left;" text="A) São Paulo">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoBButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoB" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="B) Rio de Janeiro">
+                  <Button fx:id="opcaoBButton" alignment="CENTER_LEFT" maxWidth="600.0" mnemonicParsing="false" onAction="#aoEscolherOpcaoB" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.45), 8, 0, 2, 3); -fx-alignment: center-left;" text="B) Rio de Janeiro">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoCButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoC" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="C) Brasília">
+                  <Button fx:id="opcaoCButton" alignment="CENTER_LEFT" maxWidth="600.0" mnemonicParsing="false" onAction="#aoEscolherOpcaoC" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.45), 8, 0, 2, 3); -fx-alignment: center-left;" text="C) Brasília">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
                   </Button>
-                  <Button fx:id="opcaoDButton" alignment="CENTER_LEFT" mnemonicParsing="false" onAction="#aoEscolherOpcaoD" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow; -fx-alignment: center-left;" text="D) Salvador">
+                  <Button fx:id="opcaoDButton" alignment="CENTER_LEFT" maxWidth="600.0" mnemonicParsing="false" onAction="#aoEscolherOpcaoD" prefHeight="50.0" prefWidth="600.0" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 15; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.45), 8, 0, 2, 3); -fx-alignment: center-left;" text="D) Salvador">
                      <font>
                         <Font name="System Bold" size="16.0" />
                      </font>
@@ -96,15 +90,8 @@
             </VBox>
          </children>
          <padding>
-            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+            <Insets bottom="30.0" left="20.0" right="20.0" top="30.0" />
          </padding>
       </VBox>
-   </center>
-   <top>
-      <ImageView fitHeight="150.0" fitWidth="720.0" pickOnBounds="true" preserveRatio="false" BorderPane.alignment="CENTER">
-         <image>
-            <Image url="@../../../../../images/background.png" />
-         </image>
-      </ImageView>
-   </top>
-</BorderPane>
+   </children>
+</StackPane>

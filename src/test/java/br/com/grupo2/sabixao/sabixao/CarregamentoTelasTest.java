@@ -86,10 +86,8 @@ class CarregamentoTelasTest {
         String conteudo = new String(fxml.openStream().readAllBytes(), StandardCharsets.UTF_8);
         Matcher m = Pattern.compile("<Image\\s+url=\"@([^\"]+)\"").matcher(conteudo);
 
-        int encontradas = 0;
         while (m.find()) {
             String caminho = m.group(1);
-            encontradas++;
             URI destino = fxml.toURI().resolve(caminho);
             try (var in = destino.toURL().openStream()) {
                 assertNotNull(in);
@@ -97,6 +95,54 @@ class CarregamentoTelasTest {
                 fail(tela + ".fxml aponta para imagem inexistente: " + caminho);
             }
         }
-        assertTrue(encontradas > 0, tela + ".fxml não declara nenhuma imagem");
+    }
+
+    /**
+     * Toda tela precisa declarar algum fundo, seja um <Image> no próprio FXML
+     * ou a classe .tela-fundo do styles.css.
+     *
+     * Substitui a contagem "declara ao menos uma imagem" que existia aqui: o
+     * quiz passou a receber o fundo por CSS e a contagem, sozinha, acusava
+     * falso positivo.
+     */
+    @ParameterizedTest(name = "{0}.fxml: declara fundo")
+    @ValueSource(strings = {"inicio", "login", "criar-conta", "quiz"})
+    void telaDeclaraFundo(String tela) throws Exception {
+        URL fxml = App.class.getResource(tela + ".fxml");
+        assertNotNull(fxml, tela + ".fxml não encontrado");
+
+        String conteudo = new String(fxml.openStream().readAllBytes(), StandardCharsets.UTF_8);
+        boolean temImagem = Pattern.compile("<Image\\s+url=\"@").matcher(conteudo).find();
+        boolean temFundoCss = conteudo.contains("styleClass=\"tela-fundo\"");
+
+        assertTrue(temImagem || temFundoCss,
+            tela + ".fxml não declara fundo: sem <Image> e sem styleClass=\"tela-fundo\"");
+    }
+
+    /**
+     * O url() do styles.css é resolvido pelo JavaFX em runtime e, igual à
+     * Image, falha em silêncio — a tela abre com fundo liso.
+     */
+    @ParameterizedTest(name = "styles.css: url() existe")
+    @ValueSource(strings = {"styles.css"})
+    void recursosDoCssExistem(String nomeCss) throws Exception {
+        URL css = App.class.getResource(nomeCss);
+        assertNotNull(css, nomeCss + " não encontrado");
+
+        String conteudo = new String(css.openStream().readAllBytes(), StandardCharsets.UTF_8);
+        Matcher m = Pattern.compile("url\\(\"([^\"]+)\"\\)").matcher(conteudo);
+
+        int encontradas = 0;
+        while (m.find()) {
+            String caminho = m.group(1);
+            encontradas++;
+            URI destino = css.toURI().resolve(caminho);
+            try (var in = destino.toURL().openStream()) {
+                assertNotNull(in);
+            } catch (Exception e) {
+                fail(nomeCss + " aponta para recurso inexistente: " + caminho);
+            }
+        }
+        assertTrue(encontradas > 0, nomeCss + " não declara nenhum url()");
     }
 }

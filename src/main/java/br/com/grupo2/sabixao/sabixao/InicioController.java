@@ -3,15 +3,28 @@ package br.com.grupo2.sabixao.sabixao;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
+
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class InicioController {
+
+    private static final Logger LOG = Logger.getLogger(InicioController.class.getName());
 
     @FXML
     private TextField nomeField;
 
     @FXML
     private TextField pinField;
+
+    /**
+     * Preenche o nome vindo de outra tela (ex.: após login bem-sucedido).
+     */
+    public void preencherNome(String nome) {
+        nomeField.setText(nome);
+        pinField.requestFocus();
+    }
 
     /**
      * Valida os campos e inicia o jogo/quiz
@@ -31,13 +44,12 @@ public class InicioController {
             return;
         }
 
-        // Iniciar o quiz - irá buscar perguntas da API externa
-        System.out.println("Iniciando jogo - Nome: " + nome + ", PIN: " + pin);
+        LOG.log(Level.INFO, "Iniciando jogo - nome={0}, pin={1}", new Object[] {nome, pin});
 
         try {
             App.setRoot("quiz", (QuizController controller) -> controller.iniciar(nome, pin));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Falha ao iniciar o quiz", e);
             mostrarAlerta("Erro", "Não foi possível iniciar o quiz: " + e.getMessage());
         }
     }
@@ -50,16 +62,17 @@ public class InicioController {
         try {
             App.setRoot("login");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Falha ao abrir login", e);
             mostrarAlerta("Erro", "Não foi possível abrir a tela de login!");
         }
     }
 
     /**
-     * Valida se o PIN contém apenas números
+     * Valida se o PIN contém apenas números.
+     * Visível para o pacote por causa do teste unitário.
      */
-    private boolean pinValido(String pin) {
-        return pin.matches("\\d+");
+    static boolean pinValido(String pin) {
+        return pin != null && pin.matches("\\d+");
     }
 
     /**

@@ -36,14 +36,18 @@ mvnw javafx:run
 ```bash
 ./mvnw test
 ```
-Carrega as 4 telas e confere que todo `onAction` do FXML tem método
-correspondente no controller e que as imagens referenciadas existem.
+115 testes, nenhum usa internet. Cobrem:
+- carregamento das 4 telas — `onAction` do FXML casando com método do controller,
+  imagens referenciadas existindo e cada tela declarando um fundo
+- embaralhamento das alternativas preservando o índice da resposta correta
+- decodificação de entidades HTML e limpeza da resposta do tradutor
+- cadastro e autenticação local
+- validação de PIN e cálculo de pontuação
 
-### Testar a integração com a API (sem abrir a interface)
-`TestApiIntegration` tem um `main` que busca perguntas e imprime no console:
+### Testar a integração real com a API
+Fica fora do build normal, porque depende de internet e é lento:
 ```bash
-./mvnw clean test-compile
-java -cp "target/classes;target/test-classes;<caminho-do-gson.jar>" br.com.grupo2.sabixao.sabixao.TestApiIntegration
+./mvnw test -Dgroups=integracao
 ```
 
 ## ✨ Funcionalidades
@@ -55,13 +59,16 @@ java -cp "target/classes;target/test-classes;<caminho-do-gson.jar>" br.com.grupo
 - **LOGIN** — vai para a tela de login
 
 ### 🔐 Login (`login.fxml`)
-- Nome e senha, com validação (nome ≥ 3 caracteres, senha ≥ 6)
+- Nome e senha, autenticados contra o cadastro local (`LocalAuthService`)
 - **ENTRAR**, **VOLTAR** e link para criar conta
-- ⚠️ Autenticação ainda não integrada ao backend — o login sempre aceita
+- Senha errada e conta inexistente são recusadas, com mensagens diferentes
+- Login aceito volta para a tela inicial com o nome já preenchido
+- ⚠️ Sem backend: o cadastro vive em memória e desaparece ao fechar o app
 
 ### 📝 Criar Conta (`criar-conta.fxml`)
-- Nome, senha e confirmação de senha, com validação
-- ⚠️ Cadastro ainda não integrado ao backend — nada é persistido
+- Nome, senha e confirmação, com validação (nome ≥ 3 caracteres, senha ≥ 6)
+- Registra no cadastro local e recusa nome já em uso
+- ⚠️ Sem backend: nada é persistido em disco
 
 ### ❓ Quiz (`quiz.fxml`)
 - 10 perguntas de múltipla escolha vindas da API externa
@@ -84,16 +91,23 @@ src/main/java/br/com/grupo2/sabixao/sabixao/
 │   ├── TriviaQuestion.java      # Pergunta como vem da API externa
 │   └── TriviaResponse.java      # Envelope da resposta da API
 └── service/
-    ├── ApiService.java          # Busca perguntas e fala com o backend
-    └── TranslatorService.java   # Tradução EN → PT-BR
+    ├── ApiService.java          # Busca perguntas, converte e embaralha
+    ├── TranslatorService.java   # Tradução EN → PT-BR
+    └── LocalAuthService.java    # Cadastro em memória (no lugar do backend)
 
 src/main/resources/
 ├── br/com/grupo2/sabixao/sabixao/   # inicio, login, criar-conta, quiz (.fxml)
+│                                    # + styles.css (fundo das telas)
 └── images/                          # background e logo
 
 src/test/java/br/com/grupo2/sabixao/sabixao/
-├── CarregamentoTelasTest.java   # garante que as 4 telas carregam
-└── TestApiIntegration.java      # main() para testar a API no console
+├── CarregamentoTelasTest.java   # as 4 telas carregam e têm fundo
+├── LogicaQuizTest.java          # PIN e pontuação
+├── TestApiIntegration.java      # API real, @Tag("integracao")
+└── service/
+    ├── ApiServiceTest.java          # embaralhamento e entidades HTML
+    ├── TranslatorServiceTest.java   # limpeza da tradução
+    └── LocalAuthServiceTest.java    # cadastro e login local
 ```
 
 📐 O padrão de nomes está em **[docs/convencoes.md](docs/convencoes.md)** — leia
@@ -115,7 +129,9 @@ A tradução EN → PT-BR usa a API pública do **MyMemory**, em paralelo (8 thr
 | `loginUser(nome, senha)` | `POST /api/users/login` |
 | `validatePin(pin)` | `GET /api/quiz/validate-pin?pin=...` |
 
-Nenhum controller chama esses métodos ainda — as telas de login e cadastro são apenas visuais.
+Nenhum controller chama esses métodos ainda. Enquanto não houver servidor, login e
+cadastro funcionam de verdade contra `LocalAuthService`, que guarda as contas em
+memória — é o único ponto a trocar quando o backend existir.
 
 ### A fazer no backend
 1. **API REST** (Spring Boot) — autenticação, CRUD de usuários, quizzes/PINs, pontuações

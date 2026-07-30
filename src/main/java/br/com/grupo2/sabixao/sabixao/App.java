@@ -16,13 +16,19 @@ public class App extends Application {
 
     private static Scene scene;
 
+    private static final double LARGURA = 900;
+    private static final double ALTURA = 760;
+
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("inicio"), 720, 480);
+        // 760 de altura porque a tela do quiz precisa de ~620px só para cabeçalho,
+        // pergunta e os 4 botões de resposta — em 480 o botão D ficava fora da tela.
+        scene = new Scene(loadFXML("inicio"), LARGURA, ALTURA);
+        scene.getStylesheets().add(App.class.getResource("styles.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Sabixão - Quiz Game");
-        stage.setMinWidth(720);
-        stage.setMinHeight(480);
+        stage.setMinWidth(LARGURA);
+        stage.setMinHeight(ALTURA);
         stage.show();
     }
 

@@ -2,6 +2,7 @@ module br.com.grupo2.sabixao.sabixao {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.net.http;
+    requires java.logging;
     requires com.google.gson;
 
     opens br.com.grupo2.sabixao.sabixao to javafx.fxml;
